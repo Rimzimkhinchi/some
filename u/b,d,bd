@@ -1,0 +1,680 @@
+1) missionary bfs
+
+import java.util.*;
+
+public class missionary {
+    static class State {
+        int missionariesLeft, cannibalsLeft, boat;
+        State parent;
+
+        State(int missionariesLeft, int cannibalsLeft, int boat, State parent) {
+            this.missionariesLeft = missionariesLeft;
+            this.cannibalsLeft = cannibalsLeft;
+            this.boat = boat;
+            this.parent = parent;
+        }
+
+        boolean isSafe() {
+            return (missionariesLeft >= cannibalsLeft || missionariesLeft == 0) &&
+                    (3 - missionariesLeft >= 3 - cannibalsLeft || missionariesLeft == 3);
+        }
+
+        boolean isGoal() {
+            return missionariesLeft == 0 && cannibalsLeft == 0 && boat == 0;
+        }
+    }
+
+    static void printSolution(State state) {
+        List<State> path = new ArrayList<>();
+        while (state != null) {
+            path.add(state);
+            state = state.parent;
+        }
+        Collections.reverse(path);
+
+        for (State s : path) {
+            System.out.println("(" + s.missionariesLeft + "," + s.cannibalsLeft + "," + s.boat + ")");
+        }
+    }
+
+    static void bfs() {
+        Queue<State> queue = new LinkedList<>();
+        Set<State> visited = new HashSet<>();
+
+        State initial = new State(3, 3, 1, null);
+        queue.offer(initial);
+        visited.add(initial);
+
+        while (!queue.isEmpty()) {
+            State current = queue.poll();
+
+            if (current.isGoal()) {
+                printSolution(current);
+                return;
+            }
+
+            if (current.boat == 1) {
+                // Moving from left to right
+                for (int m = 0; m <= 2; m++) {
+                    for (int c = 0; c <= 2; c++) {
+                        if (m + c >= 1 && m + c <= 2) {
+                            State nextState = new State(
+                                    current.missionariesLeft - m,
+                                    current.cannibalsLeft - c,
+                                    0,
+                                    current
+                            );
+
+                            if (nextState.isSafe() && !visited.contains(nextState)) {
+                                queue.offer(nextState);
+                                visited.add(nextState);
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Moving from right to left
+                for (int m = 0; m <= 2; m++) {
+                    for (int c = 0; c <= 2; c++) {
+                        if (m + c >= 1 && m + c <= 2) {
+                            State nextState = new State(
+                                    current.missionariesLeft + m,
+                                    current.cannibalsLeft + c,
+                                    1,
+                                    current
+                            );
+
+                            if (nextState.isSafe() && !visited.contains(nextState)) {
+                                queue.offer(nextState);
+                                visited.add(nextState);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        System.out.println("No solution found!");
+    }
+
+    public static void main(String[] args) {
+        bfs();
+    }
+}
+-------------------------------------------------------------------------------------
+2) missionary dfs
+
+
+
+import java.util.*;
+
+class State {
+    int cannibalsLeft;
+    int missionariesLeft;
+    int cannibalsRight;
+    int missionariesRight;
+    boolean boat; // True if boat is on the left bank, False otherwise
+
+    State(int cannibalsLeft, int missionariesLeft, int cannibalsRight, int missionariesRight, boolean boat) {
+        this.cannibalsLeft = cannibalsLeft;
+        this.missionariesLeft = missionariesLeft;
+        this.cannibalsRight = cannibalsRight;
+        this.missionariesRight = missionariesRight;
+        this.boat = boat;
+    }
+
+    boolean isValid() {
+        if (missionariesLeft >= 0 && missionariesRight >= 0 && cannibalsLeft >= 0 && cannibalsRight >= 0
+                && (missionariesLeft == 0 || missionariesLeft >= cannibalsLeft)
+                && (missionariesRight == 0 || missionariesRight >= cannibalsRight)) {
+            return true;
+        }
+        return false;
+    }
+
+    boolean isGoal() {
+        return missionariesLeft == 0 && cannibalsLeft == 0 && boat == false;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof State))
+            return false;
+        State s = (State) obj;
+        return s.cannibalsLeft == cannibalsLeft && s.missionariesLeft == missionariesLeft
+                && s.boat == boat && s.cannibalsRight == cannibalsRight
+                && s.missionariesRight == missionariesRight;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(cannibalsLeft, missionariesLeft, boat, cannibalsRight, missionariesRight);
+    }
+}
+
+public class cannibal {
+    static int steps = 0;
+
+    static boolean dfs(State state, HashSet<State> visited) {
+        if (state.isGoal()) {
+            System.out.println("Goal state reached!");
+            printState(state);
+            return true;
+        }
+
+        visited.add(state);
+        steps++;
+
+        if (state.boat) {
+            // Moving from left to right
+            for (int m = 0; m <= 2; m++) {
+                for (int c = 0; c <= 2; c++) {
+                    if (m + c >= 1 && m + c <= 2) {
+                        State nextState = new State(state.cannibalsLeft - c, state.missionariesLeft - m,
+                                state.cannibalsRight + c, state.missionariesRight + m, false);
+
+                        if (nextState.isValid() && !visited.contains(nextState)) {
+                            System.out.println("Step " + steps + ":");
+                            printState(nextState);
+                            if (dfs(nextState, visited))
+                                return true;
+                        }
+                    }
+                }
+            }
+        } else {
+            // Moving from right to left
+            for (int m = 0; m <= 2; m++) {
+                for (int c = 0; c <= 2; c++) {
+                    if (m + c >= 1 && m + c <= 2) {
+                        State nextState = new State(state.cannibalsLeft + c, state.missionariesLeft + m,
+                                state.cannibalsRight - c, state.missionariesRight - m, true);
+
+                        if (nextState.isValid() && !visited.contains(nextState)) {
+                            System.out.println("Step " + steps + ":");
+                            printState(nextState);
+                            if (dfs(nextState, visited))
+                                return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    static void printState(State state) {
+        System.out.println("Left Bank: " + state.cannibalsLeft + " cannibals, " + state.missionariesLeft + " missionaries");
+        System.out.println("Right Bank: " + state.cannibalsRight + " cannibals, " + state.missionariesRight + " missionaries");
+        System.out.println("Boat Position: " + (state.boat ? "Right" : "Left"));
+        System.out.println();
+    }
+
+    public static void main(String[] args) {
+        State initialState = new State(3, 3, 0, 0, true);
+        HashSet<State> visited = new HashSet<>();
+        if (!dfs(initialState, visited)) {
+            System.out.println("No solution found!");
+        }
+    }
+}
+-------------------------------------------------------------------------------------
+
+3) missionary bfs/dfs
+
+import java.util.*;
+import java.time.Duration;
+import java.time.Instant;
+
+class BFS {
+
+    int nodeNo;
+    State[] stateArray;
+    State initialState;
+
+    public BFS(State initialState) {
+        this.initialState = initialState;
+        stateArray = new State[1000005];
+        nodeNo = 0;
+    }
+
+    public State getFinalState() {
+
+        Instant start = Instant.now();
+
+        if (initialState.isItTheGoalState()) {
+            return initialState;
+        }
+
+        nodeNo = 0;
+
+        Queue<State> q = new LinkedList<>();
+
+        HashMap<State, Integer> map = new HashMap<>();
+
+        map.put(initialState, nodeNo);
+
+        initialState.setParentState(-1);
+
+        stateArray[nodeNo] = initialState;
+
+        q.add(initialState);
+
+        while (!q.isEmpty()) {
+
+            State u = q.poll();
+            int indexU = map.get(u);
+
+            List<State> successors = u.getSuccessors();
+
+            for (State v : successors) {
+
+                Instant t = Instant.now();
+                Duration dur = Duration.between(start, t);
+                double till = dur.toMillis();
+                if (till >= Constants.timeLimit * 1000) {
+                    System.out.println("Time limit " + Constants.timeLimit + " s exceeded.");
+                    return null;
+                }
+
+                if (!map.containsKey(v)) {
+                    nodeNo++;
+                    v.setParentState(indexU);
+                    stateArray[nodeNo] = v;
+
+                    if (v.isItTheGoalState()) {
+                        Instant end = Instant.now();
+                        Duration timeElapsed = Duration.between(start, end);
+                        System.out.println("Time taken: " + timeElapsed.toMillis() + " milliseconds");
+
+                        return v;
+                    }
+
+                    map.put(v, nodeNo);
+                    q.add(v);
+                }
+            }
+        }
+
+        Instant end = Instant.now();
+        Duration timeElapsed = Duration.between(start, end);
+        System.out.println("Time taken: " + timeElapsed.toMillis() + " milliseconds");
+
+        return null;
+    }
+
+    public void printPath() {
+        int t = 0;
+        State s = getFinalState();
+        System.out.println("Number of generated nodes: " + nodeNo);
+
+        if (s == null) {
+            System.out.println("No solution found.");
+            return;
+        }
+
+        String[] str = new String[100005];
+
+        while (!s.equals(initialState)) {
+            str[t] = s.toString();
+            t++;
+            s = stateArray[s.getParentState()];
+//            System.out.println(s);
+        }
+        str[t] = s.toString();
+
+        System.out.println("BFS takes " + t + " steps.\n");
+
+        for (int i = t; i >= 0; i--) {
+            System.out.print(str[i]);
+            if (i != 0) {
+                System.out.println(" --> ");
+            }
+        }
+        System.out.println("");
+    }
+}
+class Constants {
+    static int LEFT = 0; 
+    static int RIGHT = 1; 
+    static boolean visited = true; 
+    static boolean notVisited = false; 
+    static int timeLimit = 100; 
+}
+class DFS {
+
+    int nodeNo;
+    State[] stateArray;
+    State initialState;
+
+    public DFS(State initialState) {
+        this.initialState = initialState;
+        stateArray = new State[1000005];
+        nodeNo = 0;
+    }
+
+    public State getFinalState() {
+
+        Instant start = Instant.now();
+
+        if (initialState.isItTheGoalState()) {
+            return initialState;
+        }
+
+        nodeNo = 0;
+
+        Stack<State> stack = new Stack<>();
+
+        HashMap<State, Integer> map = new HashMap<>();
+
+        map.put(initialState, nodeNo);
+
+        initialState.setParentState(-1);
+
+        stateArray[nodeNo] = initialState;
+
+        stack.push(initialState);
+
+        while (!stack.isEmpty()) {
+
+            State u = stack.pop();
+            int indexU = map.get(u);
+
+            List<State> successors = u.getSuccessors();
+
+            for (State v : successors) {
+
+                Instant t = Instant.now();
+                Duration dur = Duration.between(start, t);
+                double till = dur.toMillis();
+                if (till >= Constants.timeLimit * 1000) {
+                    System.out.println("Time limit " + Constants.timeLimit + " s exceeded.");
+                    return null;
+                }
+
+                if (!map.containsKey(v)) {
+                    nodeNo++;
+                    v.setParentState(indexU);
+                    stateArray[nodeNo] = v;
+
+                    if (v.isItTheGoalState()) {
+                        Instant end = Instant.now();
+                        Duration timeElapsed = Duration.between(start, end);
+                        System.out.println("Time taken: " + timeElapsed.toMillis() + " milliseconds");
+
+                        return v;
+                    }
+
+                    map.put(v, nodeNo);
+                    stack.push(v);
+                }
+            }
+        }
+
+        Instant end = Instant.now();
+        Duration timeElapsed = Duration.between(start, end);
+        System.out.println("Time taken: " + timeElapsed.toMillis() + " milliseconds");
+
+        return null;
+    }
+
+    public void printPath() {
+        int t = 0;
+        State s = getFinalState();
+        System.out.println("Number of generated nodes: " + nodeNo);
+        if (s == null) {
+            System.out.println("No solution found.");
+            return;
+        }
+
+        String[] str = new String[100005];
+
+        while (!s.equals(initialState)) {
+            str[t] = s.toString();
+            t++;
+            s = stateArray[s.getParentState()];
+//            System.out.println(s);
+        }
+        str[t] = s.toString();
+
+        System.out.println("DFS takes " + t + " steps.\n");
+
+        for (int i = t; i >= 0; i--) {
+            System.out.print(str[i]);
+            if (i != 0) {
+                System.out.println(" --> ");
+            }
+        }
+        System.out.println("");
+    }
+}
+class State {
+
+    int parentState;
+    int MissionaryOnLeft;
+    int MissionaryOnRight;
+    int CannibalOnLeft;
+    int CannibalOnRight;
+    int boatCapacity;
+    int side;
+    
+
+    public State(int MissionaryOnLeft, int CannibalOnLeft, int MissionaryOnRight, int CannibalOnRight,
+            int boatCapacity, int side) {
+
+        this.MissionaryOnLeft = MissionaryOnLeft;
+        this.CannibalOnLeft = CannibalOnLeft;
+
+        this.MissionaryOnRight = MissionaryOnRight;
+        this.CannibalOnRight = CannibalOnRight;
+
+        this.boatCapacity = boatCapacity;
+
+        this.side = side;
+    }
+
+    public boolean isThisAValidState() {
+        
+        if (MissionaryOnLeft >= 0 && CannibalOnLeft >= 0 && MissionaryOnRight >= 0 && CannibalOnRight >= 0
+                && (MissionaryOnLeft == 0 || MissionaryOnLeft >= CannibalOnLeft)
+                && (MissionaryOnRight == 0 || MissionaryOnRight >= CannibalOnRight)) {
+            return true;
+        }
+        
+//        System.out.println(this);
+        
+        return false;
+    }
+
+    public boolean isItTheGoalState() {
+        if (MissionaryOnLeft == 0 && CannibalOnLeft == 0) {
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof State)) {
+            return false;
+        }
+
+        State s = (State) obj;
+        return (s.CannibalOnLeft == CannibalOnLeft && s.MissionaryOnLeft == MissionaryOnLeft
+                && s.side == side && s.CannibalOnRight == CannibalOnRight
+                && s.MissionaryOnRight == MissionaryOnRight);
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 61 * hash + this.MissionaryOnLeft;
+        hash = 61 * hash + this.MissionaryOnRight;
+        hash = 61 * hash + this.CannibalOnLeft;
+        hash = 61 * hash + this.CannibalOnRight;
+        hash = 61 * hash + this.side;
+        return hash;
+    }
+
+    
+
+   
+
+    public List<State> getSuccessors() {
+        List<State> successors = new ArrayList<>();
+        generateSuccessors(successors);
+//        printAll(successors);
+        return successors;
+    }
+
+    public void generateSuccessors(List<State> successors) {
+        if (side == Constants.LEFT) {
+            for (int i = 0; i <= MissionaryOnLeft; i++) {
+                for (int j = 0; j <= CannibalOnLeft; j++) {
+                    // (i == 0 || i >= j) ---> if i is 0, no check is needed. otherwise, i >= j is a must
+                    if ((i + j) != 0 && ((i + j) <= boatCapacity) && (i == 0 || i >= j)) {
+                        State tem = new State(MissionaryOnLeft - i, CannibalOnLeft - j, MissionaryOnRight + i,
+                                CannibalOnRight + j, boatCapacity, Constants.RIGHT);
+                        if (tem.isThisAValidState()) {
+                            successors.add(tem);
+//                            System.out.println(tem);
+                        }
+                    }
+                }
+            }
+        } else if (side == Constants.RIGHT) {
+            for (int i = 0; i <= MissionaryOnRight; i++) {
+                for (int j = 0; j <= CannibalOnRight; j++) {
+
+                    if ((i + j) != 0 && ((i + j) <= boatCapacity)) {
+                        State tem = new State(MissionaryOnLeft + i, CannibalOnLeft + j, MissionaryOnRight - i,
+                                CannibalOnRight - j, boatCapacity, Constants.LEFT);
+
+                        if (tem.isThisAValidState()) {
+                            successors.add(tem);
+//                            System.out.println(tem);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public String toString() {
+        if (side == Constants.LEFT) {
+            return "(" + MissionaryOnLeft + "," + CannibalOnLeft + ",Left,"
+                    + MissionaryOnRight + "," + CannibalOnRight + ")";
+        } else {
+            return "(" + MissionaryOnLeft + "," + CannibalOnLeft + ",Right,"
+                    + MissionaryOnRight + "," + CannibalOnRight + ")";
+        }
+    }
+
+    public void printAll(List<State> l) {
+        for (State s : l) {
+            System.out.println(s);
+        }
+    }
+
+    public int getParentState() {
+        return parentState;
+    }
+
+    public void setParentState(int parentState) {
+        this.parentState = parentState;
+    }
+
+    public int getMissionaryOnLeft() {
+        return MissionaryOnLeft;
+    }
+
+    public void setMissionaryOnLeft(int MissionaryOnLeft) {
+        this.MissionaryOnLeft = MissionaryOnLeft;
+    }
+
+    public int getMissionaryOnRight() {
+        return MissionaryOnRight;
+    }
+
+    public void setMissionaryOnRight(int MissionaryOnRight) {
+        this.MissionaryOnRight = MissionaryOnRight;
+    }
+
+    public int getCannibalOnLeft() {
+        return CannibalOnLeft;
+    }
+
+    public void setCannibalOnLeft(int CannibalOnLeft) {
+        this.CannibalOnLeft = CannibalOnLeft;
+    }
+
+    public int getCannibalOnRight() {
+        return CannibalOnRight;
+    }
+
+    public void setCannibalOnRight(int CannibalOnRight) {
+        this.CannibalOnRight = CannibalOnRight;
+    }
+
+    public int getBoatCapacity() {
+        return boatCapacity;
+    }
+
+    public void setBoatCapacity(int boatCapacity) {
+        this.boatCapacity = boatCapacity;
+    }
+
+    public int getSide() {
+        return side;
+    }
+
+    public void setSide(int side) {
+        this.side = side;
+    }
+
+
+
+}
+
+public class Main {
+
+    private static int initialMissionaryOnLeft;
+    private static int initialCannibalOnLeft;
+    private static int boatCapacity;
+    private static int choinceNo;
+
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+
+        while (true) {
+            System.out.println("Enter initial number of Missionaries on the left bank: ");
+            initialMissionaryOnLeft = sc.nextInt();
+            System.out.println("Enter initial number of Cannibals on the left bank: ");
+            initialCannibalOnLeft = sc.nextInt();
+            System.out.println("Enter the capcity of the boat: ");
+            boatCapacity = sc.nextInt();
+
+            System.out.println("Which algorithm do you want to use?: ");
+            System.out.println("1. BFS\n2. DFS");
+            System.out.println("Enter your choice: ");
+
+            choinceNo = sc.nextInt();
+
+            State initialState = new State(initialMissionaryOnLeft, initialCannibalOnLeft, 0, 0, boatCapacity, Constants.LEFT);
+            initialState.setParentState(-1);
+
+            if (choinceNo == 1) {
+                BFS bfs = new BFS(initialState);
+                bfs.printPath();
+            } else if (choinceNo == 2) {
+                DFS dfs = new DFS(initialState);
+                dfs.printPath();
+            } else {
+                System.out.println("You entered an invalid choice. Try again.");
+            }
+        }
+    }
+}
+-------------------------------------------------------------------------------------
+
